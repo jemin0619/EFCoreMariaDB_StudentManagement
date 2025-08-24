@@ -1,0 +1,17 @@
+﻿@model StudentManagement.Persistence.Model.StudentEntity
+
+<h2>학생 삭제</h2>
+<div>
+    <h4>정말로 삭제하시겠습니까?</h4>
+    <dl class="row">
+        <dt class="col-sm-2">이름</dt>
+        <dd class="col-sm-10">@Model.Name</dd>
+        <dt class="col-sm-2">나이</dt>
+        <dd class="col-sm-10">@Model.Age</dd>
+    </dl>
+    <form asp-action="Delete" method="post">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger">삭제</button>
+        <a asp-action="Index" class="btn btn-secondary">취소</a>
+    </form>
+</div>

@@ -1,0 +1,31 @@
+﻿@model IEnumerable<StudentManagement.Persistence.Model.StudentEntity>
+
+<h2>학생 목록</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>이름</th>
+            <th>나이</th>
+            <th>생성일</th>
+            <th>수정일</th>
+            <th>액션</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var student in Model)
+        {
+            <tr>
+                <td>@student.Name</td>
+                <td>@student.Age</td>
+                <td>@student.DateCreated.ToString("yyyy-MM-dd")</td>
+                <td>@student.DateModified.ToString("yyyy-MM-dd")</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@student.Id">상세</a> |
+                    <a asp-action="Edit" asp-route-id="@student.Id">수정</a> |
+                    <a asp-action="Delete" asp-route-id="@student.Id">삭제</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<a asp-action="Create" class="btn btn-primary">학생 등록</a>
