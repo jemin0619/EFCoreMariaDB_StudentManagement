@@ -1,20 +1,12 @@
-using Microsoft.EntityFrameworkCore;
-using StudentManagement.Persistence.DataBaseContext;
-using StudentManagement.Persistence.Repository;
+using StudentManagement.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-builder.Services.AddDbContext<StudentDbContext>(options =>
-{
-    options.UseMySql(
-        builder.Configuration.GetConnectionString("DefaultConnectionString"),
-        new MySqlServerVersion(new Version(11, 4, 5)) // Adjust version as needed
-    );
-});
 
-builder.Services.AddScoped<IStudentRepository, StudentRepository>();
+//AddPersistence를 별도로 두어서 이렇게 등록시키면 깔끔합니다!!
+builder.Services.AddPersistence(builder.Configuration);
 
 var app = builder.Build();
 
