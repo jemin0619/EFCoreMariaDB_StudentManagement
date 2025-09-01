@@ -1,31 +1,183 @@
-﻿@model IEnumerable<StudentManagement.Persistence.Model.StudentEntity>
+﻿@{
+    ViewData["Title"] = "Menu 목록";
+}
 
-<h2>학생 목록</h2>
-<table class="table">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<h2>Menu 목록</h2>
+<table id="menuTable" class="display">
     <thead>
         <tr>
-            <th>이름</th>
-            <th>나이</th>
-            <th>생성일</th>
-            <th>수정일</th>
-            <th>액션</th>
+            <th>MenuId</th>
+            <th>MenuName</th>
+            <th>Percentage</th>
+            <th>Action</th>
         </tr>
     </thead>
-    <tbody>
-        @foreach (var student in Model)
-        {
-            <tr>
-                <td>@student.Name</td>
-                <td>@student.Age</td>
-                <td>@student.DateCreated.ToString("yyyy-MM-dd")</td>
-                <td>@student.DateModified.ToString("yyyy-MM-dd")</td>
-                <td>
-                    <a asp-action="Details" asp-route-id="@student.Id">상세</a> |
-                    <a asp-action="Edit" asp-route-id="@student.Id">수정</a> |
-                    <a asp-action="Delete" asp-route-id="@student.Id">삭제</a>
-                </td>
-            </tr>
-        }
-    </tbody>
 </table>
-<a asp-action="Create" class="btn btn-primary">학생 등록</a>
+
+<div style="margin-top:30px;">
+    <h3>새 메뉴 추가</h3>
+    <form id="addMenuForm">
+        <label for="menuId">MenuId:</label>
+        <input type="number" id="menuId" name="menuId" required />
+        <label for="menuTypeId">MenuTypeId:</label>
+        <input type="number" id="menuTypeId" name="menuTypeId" required />
+        <label for="ingredientComboId">IngredientComboId:</label>
+        <input type="number" id="ingredientComboId" name="ingredientComboId" required readonly />
+        <button type="button" id="selectIngredientComboBtn">선택</button>
+        <button type="submit">Add</button>
+    </form>
+    <!-- Ingredient 정보 표시 영역 -->
+    <div id="ingredientInfo" style="margin-top:10px; display:none;">
+        <strong>선택된 IngredientCombo:</strong>
+        <div>Ingredient1: <span id="ingredient1"></span></div>
+        <div>Ingredient2: <span id="ingredient2"></span></div>
+        <div>Ingredient3: <span id="ingredient3"></span></div>
+    </div>
+    <div id="addMenuResult" style="color:red;margin-top:10px;"></div>
+</div>
+
+<!-- 토스트 메시지 영역 -->
+<div id="toast" style="
+    display:none;
+    position:fixed;
+    left:50%;
+    bottom:40px;
+    transform:translateX(-50%);
+    background:#333;
+    color:#fff;
+    padding:12px 24px;
+    border-radius:8px;
+    z-index:9999;
+    font-size:1.1em;
+    box-shadow:0 2px 8px rgba(0,0,0,0.2);
+"></div>
+
+<!-- IngredientCombo 선택 모달 -->
+<div id="ingredientComboModal" style="display:none; position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); background:#fff; border:1px solid #ccc; z-index:10000; padding:24px; border-radius:8px; min-width:400px;">
+    <h4>IngredientCombo 선택</h4>
+    <table id="ingredientComboTable" class="display" style="width:100%;">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Ingredient1</th>
+                <th>Ingredient2</th>
+                <th>Ingredient3</th>
+            </tr>
+        </thead>
+    </table>
+    <button id="closeIngredientComboModal" style="margin-top:10px;">닫기</button>
+</div>
+<div id="ingredientComboModalOverlay" style="display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.2); z-index:9999;"></div>
+
+<script>
+    function showToast(message) {
+        var $toast = $('#toast');
+        $toast.text(message).fadeIn(300);
+        setTimeout(function () {
+            $toast.fadeOut(500);
+        }, 2000);
+    }
+
+    $(document).ready(function () {
+        var table = $('#menuTable').DataTable({
+            ajax: {
+                url: '@Url.Action("GetMenusJson", "Home")',
+                dataSrc: 'data'
+            },
+            columns: [
+                { data: 'menuId' },
+                { data: 'menuName' },
+                { data: 'percentage' },
+                {
+                    data: null,
+                    render: function (data, type, row) {
+                        return `
+                            <a href="/Home/Details?menuId=${row.menuId}">상세</a> |
+                            <a href="/Home/Edit?menuId=${row.menuId}">수정</a> |
+                            <a href="/Home/Delete?menuId=${row.menuId}">삭제</a>
+                        `;
+                    }
+                }
+            ]
+        });
+
+        // Add 메뉴 AJAX
+        $('#addMenuForm').submit(function (e) {
+            e.preventDefault();
+            var menuId = $('#menuId').val();
+            var menuTypeId = $('#menuTypeId').val();
+            var ingredientComboId = $('#ingredientComboId').val();
+            $.ajax({
+                url: '@Url.Action("Create", "Home")',
+                type: 'POST',
+                data: {
+                    MenuId: menuId,
+                    MenuTypeId: menuTypeId,
+                    IngredientComboId: ingredientComboId
+                },
+                success: function (result) {
+                    if (result.success) {
+                        showToast('메뉴가 추가되었습니다~');
+                        table.ajax.reload();
+                        $('#addMenuForm')[0].reset();
+                    } else {
+                        showToast('추가 실패: ' + (result.message || ''));
+                    }
+                },
+                error: function (xhr) {
+                    showToast('추가 실패: ' + xhr.responseText);
+                }
+            });
+        });
+
+
+        // IngredientCombo 선택 모달 열기
+        $('#selectIngredientComboBtn').click(function () {
+            $('#ingredientComboModal').show();
+            $('#ingredientComboModalOverlay').show();
+
+            // DataTable이 이미 초기화되어 있으면 destroy 후 재초기화
+            if ($.fn.DataTable.isDataTable('#ingredientComboTable')) {
+                $('#ingredientComboTable').DataTable().destroy();
+            }
+
+            $('#ingredientComboTable').DataTable({
+                ajax: {
+                    url: '/Home/GetIngredientCombosJson', // Controller에서 구현 필요
+                    dataSrc: 'data'
+                },
+                columns: [
+                    { data: 'ingredientComboId' },
+                    { data: 'ingredient1' },
+                    { data: 'ingredient2' },
+                    { data: 'ingredient3' }
+                ]
+            });
+
+            // 행 클릭 시 IngredientComboId 입력 및 하단 정보 표시
+            $('#ingredientComboTable tbody').off('click').on('click', 'tr', function () {
+                var data = $('#ingredientComboTable').DataTable().row(this).data();
+                $('#ingredientComboId').val(data.ingredientComboId);
+
+                // 하단 Ingredient 정보 표시
+                $('#ingredient1').text(data.ingredient1);
+                $('#ingredient2').text(data.ingredient2);
+                $('#ingredient3').text(data.ingredient3);
+                $('#ingredientInfo').show();
+
+                $('#ingredientComboModal').hide();
+                $('#ingredientComboModalOverlay').hide();
+            });
+        });
+
+        // 모달 닫기
+        $('#closeIngredientComboModal, #ingredientComboModalOverlay').click(function () {
+            $('#ingredientComboModal').hide();
+            $('#ingredientComboModalOverlay').hide();
+        });
+    });
+</script>

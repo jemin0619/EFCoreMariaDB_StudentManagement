@@ -8,18 +8,17 @@ namespace StudentManagement.Persistence
     {
         public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddDbContext<StudentDbContext>(options =>
+            services.AddDbContext<MenuDbContext>(options =>
             {
                 options.UseMySql(
                     configuration.GetConnectionString("DefaultConnectionString"),
                     new MySqlServerVersion(new Version(11, 4, 5))
                 );
             });
-
-            services.AddScoped<IStudentRepository, StudentRepository>();
-
-            // 필요시 GenericRepository 등 추가 등록
-            // services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+            services.AddScoped<IMenuRepository, MenuRepository>();
+            services.AddScoped<IMenuNameRepository, MenuNameRepository>();
+            services.AddScoped<IMenuTypeRepository, MenuTypeRepository>();
+            services.AddScoped<IIngredientComboRepository, IngredientComboRepository>();
 
             return services;
         }

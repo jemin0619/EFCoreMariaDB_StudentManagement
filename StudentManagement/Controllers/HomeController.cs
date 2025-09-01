@@ -1,111 +1,82 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using StudentManagement.Models;
+using StudentManagement.DTOs;
 using StudentManagement.Persistence.Model;
 using StudentManagement.Persistence.Repository;
 
-namespace StudentManagement.Controllers
+public class HomeController : Controller
 {
-    public class HomeController : Controller
+    private readonly IMenuRepository _menuRepository;
+    private readonly IMenuTypeRepository _menuTypeRepository;
+    private readonly IIngredientComboRepository _ingredientComboRepository;
+
+    public HomeController(IMenuRepository menuRepository, IMenuTypeRepository menutypeRepository, IIngredientComboRepository ingredientComboRepository)
     {
-        private readonly ILogger<HomeController> _logger;
-        private readonly IStudentRepository _studentRepository;
+        _menuRepository = menuRepository;
+        _menuTypeRepository = menutypeRepository;
+        _ingredientComboRepository = ingredientComboRepository;
+    }
 
-        public HomeController(ILogger<HomeController> logger, IStudentRepository studentRepository)
-        {
-            _logger = logger;
-            _studentRepository = studentRepository;
-        }
+    // 목록
+    public async Task<IActionResult> Index()
+    {
+        var menus = await _menuRepository.GetAllAsync();
+        return View(menus);
+    }
 
-        // 학생 목록 조회
-        public async Task<IActionResult> Index()
-        {
-            var students = await _studentRepository.GetAsync();
-            return View(students);
-        }
+    [HttpGet]
+    public async Task<IActionResult> GetMenusJson()
+    {
+        var menus = await _menuRepository.GetAllAsync();
+        var menuTypes = await _menuTypeRepository.GetAllAsync();
+        int totalMenuTypeCount = menuTypes.Count;
 
-        // 학생 상세 조회
-        public async Task<IActionResult> Details(int id)
-        {
-            var student = await _studentRepository.GetByIdAsync(id);
-            if (student == null)
-                return NotFound();
-            return View(student);
-        }
-
-        // 학생 등록 폼
-        [HttpGet]
-        public IActionResult Create()
-        {
-            return View();
-        }
-
-        // 학생 등록 처리
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(StudentEntity student)
-        {
-            if (ModelState.IsValid)
+        // MenuId별로 그룹화
+        var groupedMenus = menus
+            .GroupBy(m => m.MenuId)
+            .Select(g => new MenuDto
             {
-                await _studentRepository.CreateAsync(student);
-                return RedirectToAction(nameof(Index));
-            }
-            return View(student);
-        }
+                MenuId = g.Key,
+                MenuName = g.First().MenuName?.MenuNameValue ?? "",
+                Percentage = ((totalMenuTypeCount==0)?0:Math.Round((double)g.Count() / totalMenuTypeCount * 100, 2)).ToString() + "% (" + g.Count() + "/" + totalMenuTypeCount + ")"
+            })
+            .ToList();
 
-        // 학생 수정 폼
-        [HttpGet]
-        public async Task<IActionResult> Edit(int id)
+        return Json(new { data = groupedMenus });
+        //return Json(new { data = groupedMenus }, JsonRequestBehavior.AllowGet); << .NET4.0에서는 이렇게 AllowGet을 넣어줘야 할 수도 있습니다!
+    }
+
+
+    [HttpPost]
+    public async Task<IActionResult> Create(int MenuId, int MenuTypeId, int IngredientComboId)
+    {
+        try
         {
-            var student = await _studentRepository.GetByIdAsync(id);
-            if (student == null)
-                return NotFound();
-            return View(student);
-        }
-
-        // 학생 수정 처리
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, StudentEntity student)
-        {
-            if (id != student.Id)
-                return BadRequest();
-
-            if (ModelState.IsValid)
+            var menu = new Menu
             {
-                await _studentRepository.UpdateAsync(student);
-                return RedirectToAction(nameof(Index));
-            }
-            return View(student);
+                MenuId = MenuId,
+                MenuTypeId = MenuTypeId,
+                IngredientComboId = IngredientComboId
+            };
+            await _menuRepository.AddAsync(menu);
+            return Json(new { success = true });
         }
-
-        // 학생 삭제 폼
-        [HttpGet]
-        public async Task<IActionResult> Delete(int id)
+        catch (Exception ex)
         {
-            var student = await _studentRepository.GetByIdAsync(id);
-            if (student == null)
-                return NotFound();
-            return View(student);
+            return Json(new { success = false, message = ex.Message });
         }
+    }
 
-        // 학생 삭제 처리
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var student = await _studentRepository.GetByIdAsync(id);
-            if (student == null)
-                return NotFound();
-
-            await _studentRepository.DeleteAsync(student);
-            return RedirectToAction(nameof(Index));
-        }
-
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
+    [HttpGet]
+    public async Task<IActionResult> GetIngredientCombosJson()
+    {
+        // IngredientComboRepository에서 전체 목록 가져오기
+        var combos = await _ingredientComboRepository.GetAllAsync();
+        var result = combos.Select(c => new {
+            ingredientComboId = c.IngredientComboId,
+            ingredient1 = c.Ingredient1,
+            ingredient2 = c.Ingredient2,
+            ingredient3 = c.Ingredient3
+        }).ToList();
+        return Json(new { data = result });
     }
 }

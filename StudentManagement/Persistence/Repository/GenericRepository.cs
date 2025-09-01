@@ -7,8 +7,8 @@ namespace StudentManagement.Persistence.Repository
 {
     public class GenericRepository<T> : IGenericRepository<T> where T : BaseEntity
     {
-        private readonly StudentDbContext _context;
-        public GenericRepository(StudentDbContext context)
+        private readonly MenuDbContext _context;
+        public GenericRepository(MenuDbContext context)
         {
             _context = context;
         }
