@@ -37,6 +37,8 @@ namespace StudentManagement.DTOs
     }
 }
 
+
+//HomeController.cs
 [HttpPost]
 public async Task<IActionResult> Create(int MenuId, int MenuTypeId, int IngredientComboId)
 {
