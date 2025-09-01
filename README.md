@@ -21,3 +21,6 @@ dotnet ef database update --project ./{솔루션명}
 - Microsoft.EntityFrameworkCore.Design
 - MysqlConnector
 - Pomelo.EntityFrameworkCore.MySql
+
+### 250901) Forein Key를 사용하는데 왜 순환 참조 에러가 발생하나요??
+- A. 저는 GetAll 후 Json 변환하는 부분에서 이 에러가 발생했습니다. 원인은 Json 변환시에 내부에 ICollection 때문입니다. ICollection이 부모 집합을 가리키고, 부모는 또 ICollection이 속한 자식을 가리키니 이런 에러가 발생합니다. (비전공자라 표현이 부적절할 수 있습니다...)
