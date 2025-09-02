@@ -2,87 +2,157 @@
     ViewData["Title"] = "Menu 목록";
 }
 
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+<!-- Bootstrap 5 CDN 추가 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" />
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
-<h2>Menu 목록</h2>
-<table id="menuTable" class="display">
-    <thead>
-        <tr>
-            <th>MenuId</th>
-            <th>MenuName</th>
-            <th>Percentage</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-</table>
-
-<div style="margin-top:30px;">
-    <h3>새 메뉴 추가</h3>
-    <form id="addMenuForm">
-        <label for="menuId">MenuId:</label>
-        <input type="number" id="menuId" name="menuId" required />
-        <label for="menuTypeId">MenuTypeId:</label>
-        <input type="number" id="menuTypeId" name="menuTypeId" required />
-        <label for="ingredientComboId">IngredientComboId:</label>
-        <input type="number" id="ingredientComboId" name="ingredientComboId" required readonly />
-        <button type="button" id="selectIngredientComboBtn">선택</button>
-        <button type="submit">Add</button>
-    </form>
-    <!-- Ingredient 정보 표시 영역 -->
-    <div id="ingredientInfo" style="margin-top:10px; display:none;">
-        <strong>선택된 IngredientCombo:</strong>
-        <div>Ingredient1: <span id="ingredient1"></span></div>
-        <div>Ingredient2: <span id="ingredient2"></span></div>
-        <div>Ingredient3: <span id="ingredient3"></span></div>
-    </div>
-    <div id="addMenuResult" style="color:red;margin-top:10px;"></div>
-</div>
-
-<!-- 토스트 메시지 영역 -->
-<div id="toast" style="
-    display:none;
-    position:fixed;
-    left:50%;
-    bottom:40px;
-    transform:translateX(-50%);
-    background:#333;
-    color:#fff;
-    padding:12px 24px;
-    border-radius:8px;
-    z-index:9999;
-    font-size:1.1em;
-    box-shadow:0 2px 8px rgba(0,0,0,0.2);
-"></div>
-
-<!-- IngredientCombo 선택 모달 -->
-<div id="ingredientComboModal" style="display:none; position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); background:#fff; border:1px solid #ccc; z-index:10000; padding:24px; border-radius:8px; min-width:400px;">
-    <h4>IngredientCombo 선택</h4>
-    <table id="ingredientComboTable" class="display" style="width:100%;">
-        <thead>
+<div class="container mt-4">
+    <h2 class="mb-4">Menu 목록</h2>
+    <table id="menuTable" class="table table-striped table-bordered">
+        <thead class="table-dark">
             <tr>
-                <th>Id</th>
-                <th>Ingredient1</th>
-                <th>Ingredient2</th>
-                <th>Ingredient3</th>
+                <th>MenuId</th>
+                <th>MenuName</th>
+                <th>Percentage</th>
+                <th>Action</th>
             </tr>
         </thead>
     </table>
-    <button id="closeIngredientComboModal" style="margin-top:10px;">닫기</button>
+
+    <div class="card mt-5 shadow-sm">
+        <div class="card-body">
+            <h4 class="card-title mb-3">새 메뉴 추가</h4>
+            <form id="addMenuForm" class="row g-3 align-items-center">
+                <div class="col-md-3">
+                    <label for="menuId" class="form-label">MenuId</label>
+                    <input type="number" id="menuId" name="menuId" class="form-control" required />
+                </div>
+                <div class="col-md-3">
+                    <label for="menuTypeId" class="form-label">MenuTypeId</label>
+                    <div class="input-group">
+                        <input type="number" id="menuTypeId" name="menuTypeId" class="form-control" required readonly />
+                        <button type="button" id="selectMenuTypeBtn" class="btn btn-warning">선택</button>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label for="ingredientComboId" class="form-label">IngredientComboId</label>
+                    <div class="input-group">
+                        <input type="number" id="ingredientComboId" name="ingredientComboId" class="form-control" required readonly />
+                        <button type="button" id="selectIngredientComboBtn" class="btn btn-warning">선택</button>
+                    </div>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Add</button>
+                </div>
+            </form>
+            <div id="addMenuResult" class="mt-2"></div>
+            <div id="ingredientInfo" class="mt-3 alert alert-info" style="display:none;">
+                <strong>선택된 IngredientCombo:</strong>
+                <div>Ingredient1: <span id="ingredient1"></span></div>
+                <div>Ingredient2: <span id="ingredient2"></span></div>
+                <div>Ingredient3: <span id="ingredient3"></span></div>
+            </div>
+        </div>
+    </div>
 </div>
-<div id="ingredientComboModalOverlay" style="display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.2); z-index:9999;"></div>
+
+<!-- 토스트 메시지 영역 -->
+<div id="toast" class="position-fixed bottom-0 start-50 translate-middle-x mb-4" style="display:none; z-index:9999;">
+    <div class="alert alert-success mb-0 py-2 px-4" role="alert"></div>
+</div>
+
+<!-- MenuType 선택 모달 -->
+<div class="modal fade" id="menuTypeModal" tabindex="-1" aria-labelledby="menuTypeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="menuTypeModalLabel">MenuType 선택</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+            </div>
+            <div class="modal-body">
+                <table id="menuTypeTable" class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>MenuTypeId</th>
+                            <th>MenuTypeName</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- IngredientCombo 선택 모달 -->
+<div class="modal fade" id="ingredientComboModal" tabindex="-1" aria-labelledby="ingredientComboModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="ingredientComboModalLabel">IngredientCombo 선택</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+            </div>
+            <div class="modal-body">
+                <table id="ingredientComboTable" class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Ingredient1</th>
+                            <th>Ingredient2</th>
+                            <th>Ingredient3</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 상세 정보 모달 -->
+<div class="modal fade" id="menuDetailModal" tabindex="-1" aria-labelledby="menuDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-info">
+                <h5 class="modal-title" id="menuDetailModalLabel">Menu 상세 정보</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered" id="menuDetailTable">
+                    <thead>
+                        <tr>
+                            <th>MenuType</th>
+                            <th>IngredientCombo</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- JS로 동적 생성 -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="saveMenuDetailBtn" class="btn btn-primary">저장</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
-    function showToast(message) {
-        var $toast = $('#toast');
-        $toast.text(message).fadeIn(300);
+    function showToast(message, type = 'success') {
+        var $toast = $('#toast .alert');
+        $toast.removeClass('alert-success alert-danger').addClass('alert-' + type).text(message);
+        $('#toast').fadeIn(300);
         setTimeout(function () {
-            $toast.fadeOut(500);
+            $('#toast').fadeOut(500);
         }, 2000);
     }
 
-    $(document).ready(function () {
+    $(function () {
+        // 메뉴 목록 테이블
         var table = $('#menuTable').DataTable({
             ajax: {
                 url: '@Url.Action("GetMenusJson", "Home")',
@@ -96,16 +166,16 @@
                     data: null,
                     render: function (data, type, row) {
                         return `
-                            <a href="/Home/Details?menuId=${row.menuId}">상세</a> |
-                            <a href="/Home/Edit?menuId=${row.menuId}">수정</a> |
-                            <a href="/Home/Delete?menuId=${row.menuId}">삭제</a>
+                            <button class="btn btn-sm btn-secondary me-1 menu-detail-btn" data-menuid="${row.menuId}">상세</button>
+                            <a href="/Home/Edit?menuId=${row.menuId}" class="btn btn-sm btn-info me-1">수정</a>
+                            <a href="/Home/Delete?menuId=${row.menuId}" class="btn btn-sm btn-danger">삭제</a>
                         `;
                     }
                 }
             ]
         });
 
-        // Add 메뉴 AJAX
+        // 새 메뉴 추가
         $('#addMenuForm').submit(function (e) {
             e.preventDefault();
             var menuId = $('#menuId').val();
@@ -121,33 +191,59 @@
                 },
                 success: function (result) {
                     if (result.success) {
-                        showToast('메뉴가 추가되었습니다~');
+                        showToast('메뉴가 추가되었습니다~', 'success');
                         table.ajax.reload();
                         $('#addMenuForm')[0].reset();
+                        $('#ingredientInfo').hide();
                     } else {
-                        showToast('추가 실패: ' + (result.message || ''));
+                        showToast('추가 실패: ' + (result.message || ''), 'danger');
                     }
                 },
                 error: function (xhr) {
-                    showToast('추가 실패: ' + xhr.responseText);
+                    showToast('추가 실패: ' + xhr.responseText, 'danger');
                 }
             });
         });
 
+        // MenuType 선택 모달
+        $('#selectMenuTypeBtn').click(function () {
+            var modal = new bootstrap.Modal(document.getElementById('menuTypeModal'));
+            modal.show();
 
-        // IngredientCombo 선택 모달 열기
+            if ($.fn.DataTable.isDataTable('#menuTypeTable')) {
+                $('#menuTypeTable').DataTable().destroy();
+            }
+
+            $('#menuTypeTable').DataTable({
+                ajax: {
+                    url: '/Home/GetMenuTypesJson',
+                    dataSrc: 'data'
+                },
+                columns: [
+                    { data: 'menuTypeId' },
+                    { data: 'menuTypeName' }
+                ]
+            });
+
+            $('#menuTypeTable tbody').off('click').on('click', 'tr', function () {
+                var data = $('#menuTypeTable').DataTable().row(this).data();
+                $('#menuTypeId').val(data.menuTypeId);
+                modal.hide();
+            });
+        });
+
+        // IngredientCombo 선택 모달 (추가 폼)
         $('#selectIngredientComboBtn').click(function () {
-            $('#ingredientComboModal').show();
-            $('#ingredientComboModalOverlay').show();
+            var modal = new bootstrap.Modal(document.getElementById('ingredientComboModal'));
+            modal.show();
 
-            // DataTable이 이미 초기화되어 있으면 destroy 후 재초기화
             if ($.fn.DataTable.isDataTable('#ingredientComboTable')) {
                 $('#ingredientComboTable').DataTable().destroy();
             }
 
             $('#ingredientComboTable').DataTable({
                 ajax: {
-                    url: '/Home/GetIngredientCombosJson', // Controller에서 구현 필요
+                    url: '/Home/GetIngredientCombosJson',
                     dataSrc: 'data'
                 },
                 columns: [
@@ -158,26 +254,141 @@
                 ]
             });
 
-            // 행 클릭 시 IngredientComboId 입력 및 하단 정보 표시
             $('#ingredientComboTable tbody').off('click').on('click', 'tr', function () {
                 var data = $('#ingredientComboTable').DataTable().row(this).data();
                 $('#ingredientComboId').val(data.ingredientComboId);
-
-                // 하단 Ingredient 정보 표시
                 $('#ingredient1').text(data.ingredient1);
                 $('#ingredient2').text(data.ingredient2);
                 $('#ingredient3').text(data.ingredient3);
                 $('#ingredientInfo').show();
-
-                $('#ingredientComboModal').hide();
-                $('#ingredientComboModalOverlay').hide();
+                modal.hide();
             });
         });
 
-        // 모달 닫기
-        $('#closeIngredientComboModal, #ingredientComboModalOverlay').click(function () {
-            $('#ingredientComboModal').hide();
-            $('#ingredientComboModalOverlay').hide();
+        // 상세 정보 모달 관련 변수
+        let currentDetailMenuId = null;
+        let menuDetailRows = [];
+        let editingRowIndex = null;
+
+        // 상세 버튼 클릭 시
+        $(document).on('click', '.menu-detail-btn', function () {
+            currentDetailMenuId = $(this).data('menuid');
+            $.ajax({
+                url: '/Home/GetMenuDetailJson',
+                type: 'GET',
+                data: { menuId: currentDetailMenuId },
+                success: function (result) {
+                    menuDetailRows = result.data.map(function(row) {
+                        return {
+                            menuTypeId: row.menuTypeId,
+                            menuTypeName: row.menuTypeName,
+                            ingredientComboId: row.ingredientComboId,
+                            ingredientComboText: row.ingredientComboText
+                        };
+                    });
+                    renderMenuDetailTable();
+                    var modal = new bootstrap.Modal(document.getElementById('menuDetailModal'));
+                    modal.show();
+                },
+                error: function () {
+                    showToast('상세 정보 조회 실패', 'danger');
+                }
+            });
         });
+
+        // 상세 모달 테이블 렌더링
+        function renderMenuDetailTable() {
+            var $tbody = $('#menuDetailTable tbody');
+            $tbody.empty();
+            menuDetailRows.forEach(function (row, idx) {
+                $tbody.append(
+                    `<tr>
+                        <td>${row.menuTypeName}</td>
+                        <td>${row.ingredientComboText}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning select-ingredient-btn" data-rowidx="${idx}">변경</button>
+                            <button class="btn btn-sm btn-danger delete-ingredient-btn ms-1" data-rowidx="${idx}">삭제</button>
+                        </td>
+                    </tr>`
+                );
+            });
+        }
+
+        // 상세 모달에서 IngredientCombo 변경
+        $(document).on('click', '.select-ingredient-btn', function () {
+            editingRowIndex = $(this).data('rowidx');
+            var modal = new bootstrap.Modal(document.getElementById('ingredientComboModal'));
+            modal.show();
+
+            if ($.fn.DataTable.isDataTable('#ingredientComboTable')) {
+                $('#ingredientComboTable').DataTable().destroy();
+            }
+            $('#ingredientComboTable').DataTable({
+                ajax: {
+                    url: '/Home/GetIngredientCombosJson',
+                    dataSrc: 'data'
+                },
+                columns: [
+                    { data: 'ingredientComboId' },
+                    { data: 'ingredient1' },
+                    { data: 'ingredient2' },
+                    { data: 'ingredient3' }
+                ]
+            });
+
+            // 모달 z-index 조정 (상세 모달 위에 오도록)
+            setTimeout(function () {
+                $('#ingredientComboModal').css('z-index', 1060);
+                $('.modal-backdrop').last().css('z-index', 1055);
+            }, 100);
+
+            $('#ingredientComboTable tbody').off('click').on('click', 'tr', function () {
+                var data = $('#ingredientComboTable').DataTable().row(this).data();
+                menuDetailRows[editingRowIndex].ingredientComboId = data.ingredientComboId;
+                menuDetailRows[editingRowIndex].ingredientComboText = `(${data.ingredient1}, ${data.ingredient2}, ${data.ingredient3})`;
+                var modal = bootstrap.Modal.getInstance(document.getElementById('ingredientComboModal'));
+                modal.hide();
+                renderMenuDetailTable();
+            });
+        });
+
+        $(document).on('click', '.delete-ingredient-btn', function () {
+            var idx = $(this).data('rowidx');
+            menuDetailRows[idx].ingredientComboId = null;
+            menuDetailRows[idx].ingredientComboText = "Not Defined";
+            renderMenuDetailTable();
+        });
+
+        // 상세 정보 저장
+        $('#saveMenuDetailBtn').click(function () {
+            $.ajax({
+                url: '/Home/SaveMenuDetail',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    menuId: currentDetailMenuId,
+                    details: menuDetailRows.map(function(r) {
+                        return {
+                            menuTypeId: r.menuTypeId,
+                            ingredientComboId: r.ingredientComboId
+                        };
+                    })
+                }),
+                success: function (result) {
+                    showToast('저장되었습니다.', 'success');
+                    var modal = bootstrap.Modal.getInstance(document.getElementById('menuDetailModal'));
+                    modal.hide();
+                    table.ajax.reload();
+                },
+                error: function () {
+                    showToast('저장 실패', 'danger');
+                }
+            });
+        });
+
+        // // 모달 닫힐 때 overlay 강제 제거 (예방적)
+        // $('#menuDetailModal, #ingredientComboModal').on('hidden.bs.modal', function () {
+        //     $('.modal-backdrop').remove();
+        // });
     });
 </script>

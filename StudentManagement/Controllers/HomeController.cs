@@ -37,7 +37,7 @@ public class HomeController : Controller
             {
                 MenuId = g.Key,
                 MenuName = g.First().MenuName?.MenuNameValue ?? "",
-                Percentage = ((totalMenuTypeCount==0)?0:Math.Round((double)g.Count() / totalMenuTypeCount * 100, 2)).ToString() + "% (" + g.Count() + "/" + totalMenuTypeCount + ")"
+                Percentage = ((totalMenuTypeCount==0)?0:Math.Round((double)g.Count() / totalMenuTypeCount * 100, 0)).ToString() + "% (" + g.Count() + "/" + totalMenuTypeCount + ")"
             })
             .ToList();
 
@@ -79,4 +79,103 @@ public class HomeController : Controller
         }).ToList();
         return Json(new { data = result });
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetMenuTypesJson()
+    {
+        var types = await _menuTypeRepository.GetAllAsync();
+        var result = types.Select(t => new {
+            menuTypeId = t.MenuTypeId,
+            menuTypeName = t.MenuTypeName
+        }).ToList();
+        return Json(new { data = result });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetMenuDetailJson(int menuId)
+    {
+        var menuTypes = await _menuTypeRepository.GetAllAsync();
+        var menus = await _menuRepository.GetAllAsync();
+        var ingredientCombos = await _ingredientComboRepository.GetAllAsync();
+
+        var result = menuTypes.Select<MenuType, object>(mt =>
+        {
+            var menu = menus.FirstOrDefault(m => m.MenuId == menuId && m.MenuTypeId == mt.MenuTypeId);
+            if (menu != null)
+            {
+                var combo = ingredientCombos.FirstOrDefault(ic => ic.IngredientComboId == menu.IngredientComboId);
+                string comboText = combo != null
+                    ? $"({combo.Ingredient1}, {combo.Ingredient2}, {combo.Ingredient3})"
+                    : "Not Defined";
+                return new
+                {
+                    menuTypeId = mt.MenuTypeId,
+                    menuTypeName = mt.MenuTypeName,
+                    ingredientComboId = menu.IngredientComboId,
+                    ingredientComboText = comboText
+                };
+            }
+            else
+            {
+                return new
+                {
+                    menuTypeId = mt.MenuTypeId,
+                    menuTypeName = mt.MenuTypeName,
+                    ingredientComboId = (int?)null,
+                    ingredientComboText = "Not Defined"
+                };
+            }
+        }).ToList();
+
+        return Json(new { data = result });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SaveMenuDetail([FromBody] MenuDetailSaveDto dto)
+    {
+        var menus = await _menuRepository.GetAllAsync();
+        foreach (var detail in dto.details)
+        {
+            var menu = menus.FirstOrDefault(m => m.MenuId == dto.menuId && m.MenuTypeId == detail.menuTypeId);
+            if (detail.ingredientComboId == null)
+            {
+                // ingredientComboId가 null이면 Row 삭제
+                if (menu != null)
+                    await _menuRepository.DeleteAsync(dto.menuId, detail.menuTypeId);
+            }
+            else if (menu != null)
+            {
+                // 있으면 수정
+                menu.IngredientComboId = detail.ingredientComboId.Value;
+                await _menuRepository.UpdateAsync(menu);
+            }
+            else
+            {
+                // 없으면 추가
+                var newMenu = new Menu
+                {
+                    MenuId = dto.menuId,
+                    MenuTypeId = detail.menuTypeId,
+                    IngredientComboId = detail.ingredientComboId.Value
+                };
+                await _menuRepository.AddAsync(newMenu);
+            }
+        }
+        return Json(new { success = true });
+    }
+
+
+    // DTO 예시
+    public class MenuDetailSaveDto
+    {
+        public int menuId { get; set; }
+        public List<MenuDetailRowDto> details { get; set; }
+    }
+    public class MenuDetailRowDto
+    {
+        public int menuTypeId { get; set; }
+        public int? ingredientComboId { get; set; }
+    }
+
+
 }
