@@ -59,3 +59,17 @@ public async Task<IActionResult> Create(int MenuId, int MenuTypeId, int Ingredie
     }
 }
 ```
+
+조합을 이걸로 하기... 그래야 DB 안깨질듯
+utf8mb4_general_ci
+
+
+Add 버튼이 조금 위로 올라오는 문제는 invisible Label 추가하여 해결할 것.
+<div class="col-md-3">
+    <label for="menuId" class="form-label">MenuId</label>
+    <input type="text" id="menuId" name="menuId" class="form-control" required style="width : stretch" />
+</div>
+<div class="col-md-3">
+    <label class="form-label invisible"> </label>
+    <button type="submit" class="btn btn-primary w-100">Add</button>
+</div>
