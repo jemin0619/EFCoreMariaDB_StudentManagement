@@ -75,3 +75,196 @@ Add 버튼이 조금 위로 올라오는 문제는 invisible Label 추가하여 
     <button type="submit" class="btn btn-primary w-100">Add</button>
 </div>
 ```
+
+
+```css
+@{
+    ViewData["Title"] = "MenuNames 목록";
+}
+
+<!-- Bootstrap & jQuery CDN (이미 있다면 생략) -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" />
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<div class="container mt-5">
+    <h2>MenuNames 목록</h2>
+    <table id="menuNamesTable" class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>MenuId</th>
+                <th>MenuNameValue</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+<!-- 상세 모달 -->
+<div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-info">
+                <h5 class="modal-title" id="detailModalLabel">Menus 상세 목록</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+            </div>
+            <div class="modal-body">
+                <table id="menusTable" class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>MenuId</th>
+                            <th>MenuTypeId</th>
+                            <th>IngredientComboId</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="saveMenusBtn" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- IngredientCombo 선택 모달 -->
+<div class="modal fade" id="ingredientComboModal" tabindex="-1" aria-labelledby="ingredientComboModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="ingredientComboModalLabel">IngredientCombo 선택</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+            </div>
+            <div class="modal-body">
+                <table id="ingredientComboTable" class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Ingredient1</th>
+                            <th>Ingredient2</th>
+                            <th>Ingredient3</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentMenuId = null;
+    let editingRowIndex = null;
+
+    $(function () {
+        // MenuNames 목록 Datatable
+        $('#menuNamesTable').DataTable({
+            ajax: {
+                url: '/Home/GetMenuNamesJson',
+                dataSrc: 'data'
+            },
+            columns: [
+                { data: 'menuId' },
+                { data: 'menuNameValue' },
+                {
+                    data: null,
+                    render: function (data, type, row) {
+                        return `<a href="javascript:void(0);" class="detail-link" data-menuid="${row.menuId}">상세</a>`;
+                    }
+                }
+            ]
+        });
+
+        // 상세 링크 클릭 시
+        $('#menuNamesTable tbody').on('click', '.detail-link', function () {
+            currentMenuId = $(this).data('menuid');
+            var modal = new bootstrap.Modal(document.getElementById('detailModal'));
+            modal.show();
+
+            // 상세 Datatable 생성/갱신
+            if ($.fn.DataTable.isDataTable('#menusTable')) {
+                $('#menusTable').DataTable().destroy();
+            }
+            $('#menusTable').DataTable({
+                ajax: {
+                    url: '/Home/GetMenusByMenuIdJson',
+                    data: { menuId: currentMenuId },
+                    dataSrc: 'data'
+                },
+                columns: [
+                    { data: 'menuId' },
+                    { data: 'menuTypeId' },
+                    { data: 'ingredientComboId' },
+                    {
+                        data: null,
+                        render: function (data, type, row, meta) {
+                            return `<button class="btn btn-sm btn-warning edit-ingredient-btn" data-rowidx="${meta.row}">수정</button>`;
+                        }
+                    }
+                ],
+                destroy: true
+            });
+        });
+
+        // 수정 버튼 클릭 시 IngredientCombo 선택 모달
+        $(document).on('click', '.edit-ingredient-btn', function () {
+            editingRowIndex = $(this).data('rowidx');
+            var modal = new bootstrap.Modal(document.getElementById('ingredientComboModal'));
+            modal.show();
+
+            // IngredientCombo 목록 Datatable
+            if ($.fn.DataTable.isDataTable('#ingredientComboTable')) {
+                $('#ingredientComboTable').DataTable().destroy();
+            }
+            $('#ingredientComboTable').DataTable({
+                ajax: {
+                    url: '/Home/GetIngredientCombosJson',
+                    dataSrc: 'data'
+                },
+                columns: [
+                    { data: 'ingredientComboId' },
+                    { data: 'ingredient1' },
+                    { data: 'ingredient2' },
+                    { data: 'ingredient3' }
+                ]
+            });
+
+            // IngredientCombo 선택 시
+            $('#ingredientComboTable tbody').off('click').on('click', 'tr', function () {
+                var comboData = $('#ingredientComboTable').DataTable().row(this).data();
+                var menusTable = $('#menusTable').DataTable();
+                var rowData = menusTable.row(editingRowIndex).data();
+                rowData.ingredientComboId = comboData.ingredientComboId;
+                menusTable.row(editingRowIndex).data(rowData).draw(false);
+                var modal = bootstrap.Modal.getInstance(document.getElementById('ingredientComboModal'));
+                modal.hide();
+            });
+        });
+
+        // Save 버튼 클릭 시 DB 반영
+        $('#saveMenusBtn').click(function () {
+            var menusTable = $('#menusTable').DataTable();
+            var allData = menusTable.rows().data().toArray();
+            $.ajax({
+                url: '/Home/SaveMenusByMenuId',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    menuId: currentMenuId,
+                    menus: allData
+                }),
+                success: function (result) {
+                    alert('저장되었습니다.');
+                    var modal = bootstrap.Modal.getInstance(document.getElementById('detailModal'));
+                    modal.hide();
+                },
+                error: function () {
+                    alert('저장 실패');
+                }
+            });
+        });
+    });
+</script>
+```
